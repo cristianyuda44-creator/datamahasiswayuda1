@@ -1,0 +1,36 @@
+
+import { StudentData } from "./student";
+
+export const STUDENT_DATABASE: StudentData[] = [
+  { id: '1', name: "ADLINA NAILIYANTI", nim: "241011402755", major: "Informatics", gpa: 0 },
+  { id: '2', name: "ADRIAN MULYA AKBAR", nim: "241011400228", major: "Informatics", gpa: 0 },
+  { id: '3', name: "AFDAL LAIA", nim: "241011402051", major: "Informatics", gpa: 0 },
+  { id: '4', name: "AFFAN DHIYA DIL AWAR", nim: "241011400266", major: "Informatics", gpa: 0 },
+  { id: '5', name: "ALFRENDO SURANTA", nim: "241011401526", major: "Informatics", gpa: 0 },
+  { id: '6', name: "BAYU ABIAKSO", nim: "241011400277", major: "Informatics", gpa: 0 },
+  { id: '7', name: "CRISTIAN YUDA", nim: "241011402026", major: "Informatics", gpa: 0 },
+  { id: '8', name: "DIMAS AKBAR FATUROHMAN", nim: "241011400248", major: "Informatics", gpa: 0 },
+  { id: '9', name: "ELISABETH TES LAE", nim: "241011402113", major: "Informatics", gpa: 0 },
+  { id: '10', name: "FADLY HIMAWAN SAPUTRA", nim: "241011401528", major: "Informatics", gpa: 0 },
+  { id: '11', name: "FARIZ ADITYA ARDHANA", nim: "241011400268", major: "Informatics", gpa: 0 },
+  { id: '12', name: "FAYA NUR RIDHO", nim: "241011403270", major: "Informatics", gpa: 0 },
+  { id: '13', name: "FIRMAN GANI", nim: "241011400233", major: "Informatics", gpa: 0 },
+  { id: '14', name: "GILANG NOVRIZAL", nim: "241011400269", major: "Informatics", gpa: 0 },
+  { id: '15', name: "M. FAKHRURROZI", nim: "241011400231", major: "Informatics", gpa: 0 },
+  { id: '16', name: "M. RAKA NURIDWAN", nim: "241011400256", major: "Informatics", gpa: 0 },
+  { id: '17', name: "MECHAIL ADE VAHROZI", nim: "241011400276", major: "Informatics", gpa: 0 },
+  { id: '18', name: "MEDINA FIKANTI", nim: "241011401536", major: "Informatics", gpa: 0 },
+  { id: '19', name: "MUHAMAD FAZRI", nim: "241011402315", major: "Informatics", gpa: 0 },
+  { id: '20', name: "MUHAMMAD ICHSAN FACHRULROZI", nim: "241011400235", major: "Informatics", gpa: 0 },
+  { id: '21', name: "MUHAMMAD JIWA ISLAMUTIDAR", nim: "241011401525", major: "Informatics", gpa: 0 },
+  { id: '22', name: "MUHAMMAD SULTAN", nim: "191011402813", major: "Informatics", gpa: 0 },
+  { id: '23', name: "MUHAMMAD ZIDAN", nim: "241011401533", major: "Informatics", gpa: 0 },
+  { id: '24', name: "MUZAYIN ARIFIN", nim: "241011400261", major: "Informatics", gpa: 0 },
+  { id: '25', name: "RIDO MAULIDAN", nim: "241011400232", major: "Informatics", gpa: 0 },
+  { id: '26', name: "STEVANIA NAILA SADING", nim: "241011400254", major: "Informatics", gpa: 0 },
+  { id: '27', name: "SULTHAN ARYA SATWIKA", nim: "241011401769", major: "Informatics", gpa: 0 },
+  { id: '28', name: "SYAHRUL KHAIRUL AQBAR", nim: "241011400253", major: "Informatics", gpa: 0 },
+  { id: '29', name: "TIMOTHY TARUMASELLEY", nim: "241011401936", major: "Informatics", gpa: 0 },
+  { id: '30', name: "ULYA KHODILAH", nim: "241011401655", major: "Informatics", gpa: 0 },
+  { id: '31', name: "YEHEZKIEL PASKAH", nim: "241011402104", major: "Informatics", gpa: 0 }
+];
