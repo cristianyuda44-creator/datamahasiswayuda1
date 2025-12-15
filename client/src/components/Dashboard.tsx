@@ -1,21 +1,22 @@
 import { motion } from "framer-motion";
-import { StudentManager } from "@/lib/student-manager";
+import { StudentManager, SortAlgorithm, SearchAlgorithm } from "@/lib/student-manager";
 import { Student, StudentData } from "@/lib/student";
 import { useState, useEffect, useRef } from "react";
 import { 
   Plus, Search, SortAsc, Users, GraduationCap, 
-  Trash2, Download, Upload, RefreshCw, Terminal, Shield, Activity
+  Trash2, Download, Upload, Terminal, Shield, 
+  LayoutDashboard, Settings, UserCircle, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  BarChart, Bar, Tooltip, ResponsiveContainer, Cell, XAxis, YAxis
+  BarChart, Bar, Tooltip, ResponsiveContainer, Cell, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { STUDENT_DATABASE } from "@/lib/data";
 
@@ -25,33 +26,38 @@ interface DashboardProps {
 }
 
 const COMPLEXITIES: Record<string, string> = {
-  bubble: 'O(n²)',
-  selection: 'O(n²)',
-  insertion: 'O(n²)',
-  merge: 'O(n log n)',
+  bubble: 'O(n²) - Quadratic',
+  selection: 'O(n²) - Quadratic',
+  insertion: 'O(n²) - Quadratic',
+  merge: 'O(n log n) - Logarithmic',
   shell: 'O(n log² n)',
-  linear: 'O(n)',
-  binary: 'O(log n)',
+  linear: 'O(n) - Linear',
+  sequential: 'O(n) - Linear',
+  binary: 'O(log n) - Logarithmic',
 };
 
 export function Dashboard({ onLogout, currentUser }: DashboardProps) {
-  // Use STUDENT_DATABASE as initial data
   const [manager] = useState(new StudentManager(STUDENT_DATABASE));
   const [students, setStudents] = useState<Student[]>([]);
+  
+  // Controls
+  const [sortAlgo, setSortAlgo] = useState<SortAlgorithm>('bubble');
+  const [sortBy, setSortBy] = useState<'name'|'gpa'|'nim'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('asc');
+  const [searchAlgo, setSearchAlgo] = useState<SearchAlgorithm>('linear');
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchTime, setSearchTime] = useState<number | null>(null);
-  const [sortTime, setSortTime] = useState<number | null>(null);
-  const [currentAlgo, setCurrentAlgo] = useState<string | null>(null);
+  
+  const [timeComplexity, setTimeComplexity] = useState<string>("");
+  const [executionTime, setExecutionTime] = useState<number | null>(null);
+
   const [isAddOpen, setIsAddOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Form State
   const [formData, setFormData] = useState<Partial<StudentData>>({
     name: "", nim: "", major: "", gpa: 0
   });
 
-  // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editGpa, setEditGpa] = useState<number>(0);
 
@@ -63,32 +69,40 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
     setStudents(manager.getStudents());
   };
 
-  const handleSearch = (algo: 'linear' | 'binary') => {
-    const { results, time } = manager.search(searchQuery, algo);
-    setStudents(results);
-    setSearchTime(time);
-    setCurrentAlgo(algo);
-    toast({
-      title: `Pencarian Selesai (${algo})`,
-      description: `Ditemukan ${results.length} hasil dalam ${time.toFixed(4)}ms`,
-    });
-  };
+  // Combined Search & Sort Handler
+  useEffect(() => {
+    // 1. Search First
+    const { results, time: sTime } = manager.search(searchQuery, searchAlgo);
+    let filtered = results;
+    
+    // 2. Then Sort
+    // Note: We need to sort the filtered results. 
+    // Since manager.sort sorts the whole internal array, we might want to just sort the display array here for the UI 
+    // OR update the manager's state. For this specific requirement, let's update manager state with sorts but keep search separate visual.
+    // Actually, manager.sort returns sorted data.
+    
+    const { data, time: sortTime } = manager.sort(sortAlgo, sortBy, sortOrder);
+    
+    // If there is a search query, filter the SORTED data
+    if (searchQuery) {
+       const final = data.filter(s => 
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        s.nim.includes(searchQuery)
+       );
+       setStudents(final);
+       setExecutionTime(sTime + sortTime);
+       setTimeComplexity(`Sort: ${COMPLEXITIES[sortAlgo]} | Search: ${COMPLEXITIES[searchAlgo]}`);
+    } else {
+       setStudents(data);
+       setExecutionTime(sortTime);
+       setTimeComplexity(`Sort: ${COMPLEXITIES[sortAlgo]}`);
+    }
 
-  const handleSort = (algo: any, key: 'gpa' | 'name') => {
-    const { data, time } = manager.sort(algo, key);
-    setStudents([...data]); // Force refresh
-    setSortTime(time);
-    setCurrentAlgo(algo);
-    toast({
-      title: `Pengurutan Selesai (${algo})`,
-      description: `Diurutkan berdasarkan ${key} dalam ${time.toFixed(4)}ms`,
-    });
-  };
+  }, [sortAlgo, sortBy, sortOrder, searchQuery, searchAlgo, manager]); // Re-run when any config changes
 
   const handleAdd = () => {
     try {
       if (!formData.name || !formData.nim || !formData.major) throw new Error("Semua kolom harus diisi");
-      
       manager.addStudent({
         id: Math.random().toString(36).substr(2, 9),
         name: formData.name,
@@ -96,7 +110,11 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
         major: formData.major,
         gpa: Number(formData.gpa)
       });
-      refreshData();
+      refreshData(); // Triggers re-render via effect? No, need to trigger effect manually or just call the sort again.
+      // Force trigger by resetting a state or just calling the logic
+      const { data } = manager.sort(sortAlgo, sortBy, sortOrder);
+      setStudents(data);
+      
       setIsAddOpen(false);
       setFormData({ name: "", nim: "", major: "", gpa: 0 });
       toast({ title: "Berhasil", description: "Mahasiswa berhasil ditambahkan" });
@@ -107,8 +125,9 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
 
   const handleDelete = (id: string) => {
     manager.deleteStudent(id);
-    refreshData();
-    toast({ title: "Dihapus", description: "Data mahasiswa dihapus dari database" });
+    const { data } = manager.sort(sortAlgo, sortBy, sortOrder);
+    setStudents(data);
+    toast({ title: "Dihapus", description: "Data mahasiswa dihapus" });
   };
   
   const startEditing = (student: Student) => {
@@ -119,7 +138,8 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
   const saveEdit = (id: string) => {
       manager.updateStudent(id, { gpa: editGpa });
       setEditingId(null);
-      refreshData();
+      const { data } = manager.sort(sortAlgo, sortBy, sortOrder);
+      setStudents(data);
       toast({ title: "Diperbarui", description: "IPK berhasil diperbarui" });
   };
 
@@ -151,284 +171,333 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Chart Data Preparation
   const chartData = students.map(s => ({
     name: s.name.split(' ')[0],
     gpa: s.gpa,
-    full: s
   }));
 
+  const averageGPA = students.length > 0 
+    ? (students.reduce((acc, curr) => acc + curr.gpa, 0) / students.length).toFixed(2) 
+    : "0.00";
+
   return (
-    <div className="min-h-screen bg-background pb-20 font-sans text-foreground">
-      {/* Top Navigation */}
-      <motion.header 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="sticky top-0 z-50 glass-panel border-b border-white/10 px-6 py-4 flex items-center justify-between backdrop-blur-xl"
-      >
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-black/50 border border-primary/50 flex items-center justify-center text-primary font-bold shadow-[0_0_15px_rgba(0,255,255,0.2)] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-primary/10 group-hover:bg-primary/20 transition-colors" />
-            <Shield className="h-6 w-6" />
+    <div className="flex min-h-screen bg-[#0f1115] font-sans text-white overflow-hidden">
+      
+      {/* SIDEBAR */}
+      <aside className="w-64 border-r border-white/5 bg-[#0f1115] flex flex-col fixed h-full z-20">
+        <div className="p-6 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+            <GraduationCap className="text-white h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold font-heading uppercase tracking-wider text-white">
-              Student <span className="text-primary drop-shadow-[0_0_8px_rgba(0,255,255,0.5)]">Academic</span>
+            <h1 className="font-bold text-lg leading-none tracking-wide text-white">
+              STUDENT
             </h1>
-            <div className="flex items-center gap-2 text-[10px] font-mono text-primary/70">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                SISTEM ONLINE
-            </div>
+            <span className="text-cyan-400 text-sm font-mono tracking-widest">ACADEMIC</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept=".json" 
-            onChange={handleImport}
-          />
-          <div className="hidden md:flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="border-primary/30 hover:bg-primary/10 text-primary font-mono text-xs">
-                <Upload className="mr-2 h-3 w-3" /> IMPOR DATA
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} className="border-primary/30 hover:bg-primary/10 text-primary font-mono text-xs">
-                <Download className="mr-2 h-3 w-3" /> EKSPOR DATA
-            </Button>
-          </div>
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          <Button variant="ghost" className="w-full justify-start gap-3 text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 hover:text-cyan-300">
+            <LayoutDashboard size={18} /> DASHBOARD
+          </Button>
+          <Button variant="ghost" className="w-full justify-start gap-3 text-gray-400 hover:bg-white/5 hover:text-white">
+            <Users size={18} /> MAHASISWA
+          </Button>
+          <Button variant="ghost" className="w-full justify-start gap-3 text-gray-400 hover:bg-white/5 hover:text-white">
+            <Settings size={18} /> PENGATURAN
+          </Button>
+        </nav>
+
+        <div className="p-4 border-t border-white/5">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start gap-3 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+            onClick={onLogout}
+          >
+            <LogOut size={18} /> LOGOUT SYSTEM
+          </Button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen relative">
+        {/* Background Grid */}
+        <div className="fixed inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] ml-64" />
+
+        <div className="relative z-10 max-w-7xl mx-auto space-y-8">
           
-          <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-              <div className="text-right hidden sm:block">
-                  <p className="text-xs text-muted-foreground font-mono">PENGGUNA</p>
-                  <p className="text-sm font-bold text-white">{currentUser?.name || "ADMIN"}</p>
-              </div>
-              <Button variant="ghost" className="hover:bg-destructive/10 hover:text-destructive border border-transparent hover:border-destructive/30" onClick={onLogout}>
-                KELUAR
-              </Button>
-          </div>
-        </div>
-      </motion.header>
-
-      <main className="container mx-auto px-4 pt-8 space-y-8">
-        
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <Card className="border border-primary/20 shadow-[0_0_20px_rgba(0,255,255,0.05)] bg-black/40 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground font-mono uppercase">Rata-rata IPK</CardTitle>
-                <Activity className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-white font-mono tracking-tighter">
-                  {(students.length > 0 ? students.reduce((acc, curr) => acc + curr.gpa, 0) / students.length : 0).toFixed(2)}
+          {/* TOP SECTION: CHART & SUMMARY */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* CHART */}
+            <Card className="lg:col-span-2 border border-white/10 bg-[#15171e]/80 backdrop-blur-sm shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-heading font-bold text-lg text-white uppercase tracking-wide">
+                    STATISTIK IPK MAHASISWA
+                  </h3>
+                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 font-mono px-3 py-1">
+                    RATA-RATA: {averageGPA}
+                  </Badge>
                 </div>
-                <div className="h-1 w-full bg-secondary/10 mt-4 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary animate-pulse w-2/3" />
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} barSize={20}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                      <XAxis dataKey="name" stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={60} />
+                      <YAxis stroke="#ffffff50" fontSize={10} tickLine={false} axisLine={false} domain={[0, 4]} />
+                      <Tooltip 
+                        cursor={{fill: '#ffffff05'}}
+                        contentStyle={{ backgroundColor: '#0f1115', border: '1px solid #333', color: '#fff', fontSize: '12px' }}
+                      />
+                      <Bar dataKey="gpa" radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.gpa >= 3.5 ? '#06b6d4' : (entry.gpa >= 3.0 ? '#3b82f6' : '#8b5cf6')} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
-            <Card className="h-full border border-primary/20 shadow-[0_0_20px_rgba(0,255,255,0.05)] bg-black/40 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-primary font-mono uppercase text-sm">Visualisasi Distribusi IPK</CardTitle>
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-[10px]">LIVE FEED</Badge>
-              </CardHeader>
-              <CardContent className="h-[120px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <Tooltip 
-                      cursor={{fill: 'rgba(255,255,255,0.05)'}}
-                      contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', color: '#fff', fontFamily: 'monospace' }}
-                    />
-                    <Bar dataKey="gpa" radius={[2, 2, 0, 0]} isAnimationActive={true}>
-                      {chartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.gpa >= 3.0 ? '#00ffd5' : '#ff00ff'} 
-                          stroke="#ffffff"
-                          strokeWidth={1}
-                          strokeOpacity={0.2}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Controls Section */}
-        <Card className="border border-white/10 bg-black/40 backdrop-blur-md">
-          <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="relative flex-1 md:w-64 group">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                <Input 
-                  placeholder="CARI DATA..." 
-                  className="pl-9 bg-black/20 border-white/10 focus:border-primary/50 font-mono text-sm text-white"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            {/* SUMMARY CARDS */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-heading font-bold text-lg text-cyan-400 uppercase tracking-wide">RINGKASAN</h3>
               </div>
-              <Button size="icon" variant="outline" onClick={() => handleSearch('linear')} title="Linear Search" className="border-white/10 hover:border-primary/50 hover:bg-primary/10">
-                <Terminal className="h-4 w-4" />
-              </Button>
-              <Button size="icon" variant="outline" onClick={() => handleSearch('binary')} title="Binary Search" className="border-white/10 hover:border-primary/50 hover:bg-primary/10">
-                <RefreshCw className="h-4 w-4" />
-              </Button>
+              
+              <Card className="border border-white/10 bg-[#1a1d26] shadow-lg group hover:border-cyan-500/30 transition-colors">
+                <CardContent className="p-5">
+                  <p className="text-xs text-gray-400 font-mono mb-1 uppercase">TOTAL MAHASISWA</p>
+                  <p className="text-3xl font-bold text-white">{students.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-white/10 bg-[#1a1d26] shadow-lg group hover:border-purple-500/30 transition-colors">
+                <CardContent className="p-5">
+                  <p className="text-xs text-gray-400 font-mono mb-1 uppercase">RATA-RATA IPK</p>
+                  <p className="text-3xl font-bold text-purple-400">{averageGPA}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border border-white/10 bg-[#1a1d26] shadow-lg group hover:border-green-500/30 transition-colors">
+                <CardContent className="p-5">
+                  <p className="text-xs text-gray-400 font-mono mb-1 uppercase">CUMLAUDE (&gt; 3.5)</p>
+                  <p className="text-3xl font-bold text-cyan-400">{students.filter(s => s.gpa > 3.5).length}</p>
+                </CardContent>
+              </Card>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-              <Select onValueChange={(v) => handleSort(v, 'gpa')}>
-                <SelectTrigger className="w-[140px] bg-black/20 border-white/10 font-mono text-xs">
-                  <SortAsc className="mr-2 h-3 w-3" />
-                  <SelectValue placeholder="URUTKAN" />
-                </SelectTrigger>
-                <SelectContent className="bg-black/90 border-white/20 text-white">
-                  <SelectItem value="bubble">BUBBLE SORT</SelectItem>
-                  <SelectItem value="selection">SELECTION SORT</SelectItem>
-                  <SelectItem value="insertion">INSERTION SORT</SelectItem>
-                  <SelectItem value="merge">MERGE SORT</SelectItem>
-                  <SelectItem value="shell">SHELL SORT</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* MIDDLE SECTION HEADER */}
+          <div className="flex items-center gap-3">
+             <div className="w-1 h-8 bg-cyan-500 rounded-full box-shadow-[0_0_10px_#06b6d4]" />
+             <h2 className="text-2xl font-bold font-heading text-white uppercase tracking-wider">DATA MAHASISWA</h2>
+          </div>
 
-              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          {/* ALGORITHM CONFIG PANEL */}
+          <Card className="border border-white/10 bg-[#15171e] shadow-xl">
+             <div className="border-b border-white/5 px-6 py-3 flex justify-between items-center bg-white/[0.02]">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold font-mono text-sm">
+                   <Terminal size={14} /> ALGORITHM CONFIG
+                </div>
+                <div className="text-[10px] font-mono text-gray-500">
+                   {timeComplexity && `Time Complexity: ${timeComplexity}`}
+                   {executionTime !== null && ` | Exec Time: ${executionTime.toFixed(4)}ms`}
+                </div>
+             </div>
+             <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+                   
+                   <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-mono text-gray-500">SORT ALGO</Label>
+                      <Select value={sortAlgo} onValueChange={(v: any) => setSortAlgo(v)}>
+                         <SelectTrigger className="bg-[#0f1115] border-white/10 text-xs h-9">
+                            <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                            <SelectItem value="bubble">Bubble Sort</SelectItem>
+                            <SelectItem value="selection">Selection Sort</SelectItem>
+                            <SelectItem value="insertion">Insertion Sort</SelectItem>
+                            <SelectItem value="merge">Merge Sort</SelectItem>
+                            <SelectItem value="shell">Shell Sort</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-mono text-gray-500">SORT BY</Label>
+                      <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                         <SelectTrigger className="bg-[#0f1115] border-white/10 text-xs h-9">
+                            <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                            <SelectItem value="name">Nama</SelectItem>
+                            <SelectItem value="gpa">IPK</SelectItem>
+                            <SelectItem value="nim">NIM</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-mono text-gray-500">SORT ORDER</Label>
+                      <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                         <SelectTrigger className="bg-[#0f1115] border-white/10 text-xs h-9">
+                            <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                            <SelectItem value="asc">Ascending (A-Z / 0-4)</SelectItem>
+                            <SelectItem value="desc">Descending (Z-A / 4-0)</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-mono text-gray-500">SEARCH ALGO</Label>
+                      <Select value={searchAlgo} onValueChange={(v: any) => setSearchAlgo(v)}>
+                         <SelectTrigger className="bg-[#0f1115] border-white/10 text-xs h-9">
+                            <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent className="bg-[#0f1115] border-white/10 text-white">
+                            <SelectItem value="linear">Linear Search</SelectItem>
+                            <SelectItem value="binary">Binary Search</SelectItem>
+                            <SelectItem value="sequential">Sequential Search</SelectItem>
+                         </SelectContent>
+                      </Select>
+                   </div>
+
+                   <div className="flex gap-2">
+                      <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImport} />
+                      <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 bg-[#0f1115] border-cyan-500/20 text-cyan-500 text-[10px] h-9 hover:bg-cyan-500/10 hover:text-cyan-400">
+                         <Download size={12} className="mr-1" /> Export JSON
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1 bg-[#0f1115] border-purple-500/20 text-purple-500 text-[10px] h-9 hover:bg-purple-500/10 hover:text-purple-400">
+                         <Upload size={12} className="mr-1" /> Import JSON
+                      </Button>
+                   </div>
+
+                </div>
+             </CardContent>
+          </Card>
+
+          {/* ACTION BAR */}
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+             <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                <Input 
+                   placeholder="Cari Nama atau NIM..." 
+                   className="pl-10 bg-[#15171e] border-white/10 text-white focus:border-cyan-500/50"
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                />
+             </div>
+             
+             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-primary text-black hover:bg-primary/90 font-bold font-mono text-xs tracking-wider">
-                    <Plus className="mr-2 h-4 w-4" /> TAMBAH DATA
+                  <Button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold tracking-wide">
+                     <Plus size={16} className="mr-2" /> TAMBAH MAHASISWA
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-black/90 border-primary/30 text-white backdrop-blur-xl">
+                <DialogContent className="bg-[#15171e] border-white/10 text-white">
                   <DialogHeader>
-                    <DialogTitle className="font-mono text-primary">ENTRI MAHASISWA BARU</DialogTitle>
+                    <DialogTitle>Tambah Mahasiswa Baru</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right font-mono text-xs text-muted-foreground">NAMA</Label>
+                      <Label htmlFor="name" className="text-right">Nama</Label>
                       <Input id="name" className="col-span-3 bg-white/5 border-white/10" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="nim" className="text-right font-mono text-xs text-muted-foreground">NIM</Label>
-                      <Input id="nim" className="col-span-3 bg-white/5 border-white/10" value={formData.nim} onChange={e => setFormData({...formData, nim: e.target.value})} placeholder="Hanya angka" />
+                      <Label htmlFor="nim" className="text-right">NIM</Label>
+                      <Input id="nim" className="col-span-3 bg-white/5 border-white/10" value={formData.nim} onChange={e => setFormData({...formData, nim: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="major" className="text-right font-mono text-xs text-muted-foreground">JURUSAN</Label>
+                      <Label htmlFor="major" className="text-right">Jurusan</Label>
                       <Input id="major" className="col-span-3 bg-white/5 border-white/10" value={formData.major} onChange={e => setFormData({...formData, major: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="gpa" className="text-right font-mono text-xs text-muted-foreground">IPK</Label>
+                      <Label htmlFor="gpa" className="text-right">IPK</Label>
                       <Input id="gpa" type="number" step="0.01" max="4.0" className="col-span-3 bg-white/5 border-white/10" value={formData.gpa} onChange={e => setFormData({...formData, gpa: parseFloat(e.target.value)})} />
                     </div>
                   </div>
-                  <Button onClick={handleAdd} className="w-full bg-primary text-black hover:bg-primary/90">KONFIRMASI</Button>
+                  <Button onClick={handleAdd} className="bg-cyan-500 text-black hover:bg-cyan-600">Simpan</Button>
                 </DialogContent>
-              </Dialog>
-            </div>
-          </CardContent>
-          {(searchTime !== null || sortTime !== null) && (
-            <div className="px-4 pb-2 border-t border-white/5 flex items-center justify-between bg-black/20">
-              <div className="flex gap-4 text-[10px] font-mono text-muted-foreground py-1">
-                {searchTime !== null && <span>WAKTU PENCARIAN: <span className="text-primary">{searchTime.toFixed(4)}ms</span></span>}
-                {sortTime !== null && <span>WAKTU SORTING: <span className="text-primary">{sortTime.toFixed(4)}ms</span></span>}
-              </div>
-              {currentAlgo && (
-                <Badge variant="outline" className="font-mono text-[10px] border-primary/20 text-primary/70 bg-primary/5 h-5">
-                  KOMPLEKSITAS: {COMPLEXITIES[currentAlgo]}
-                </Badge>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* Data Grid Table */}
-        <div className="rounded-md border border-white/10 overflow-hidden bg-black/40 backdrop-blur-sm shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-primary/10 text-primary font-mono border-b border-white/10">
-                <tr>
-                  <th className="px-6 py-4 font-bold tracking-wider">Mahasiswa</th>
-                  <th className="px-6 py-4 font-bold tracking-wider">NIM</th>
-                  <th className="px-6 py-4 font-bold tracking-wider">Jurusan</th>
-                  <th className="px-6 py-4 font-bold tracking-wider text-center">IPK</th>
-                  <th className="px-6 py-4 font-bold tracking-wider text-center">Visual</th>
-                  <th className="px-6 py-4 font-bold tracking-wider text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {students.map((student) => (
-                  <tr key={student.id} className="hover:bg-white/5 transition-colors group">
-                    <td className="px-6 py-4 font-medium text-white font-heading tracking-wide">
-                      {student.name}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-muted-foreground">
-                      {student.nim}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {student.major}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {editingId === student.id ? (
-                        <div className="flex items-center justify-center gap-2">
-                           <Input 
-                              type="number" 
-                              className="w-20 h-8 text-center bg-black/50 border-primary text-white" 
-                              value={editGpa} 
-                              onChange={(e) => setEditGpa(parseFloat(e.target.value))}
-                              step="0.01"
-                              max="4.00"
-                              autoFocus
-                           />
-                           <Button size="icon" className="h-8 w-8 bg-green-500 hover:bg-green-600 text-black" onClick={() => saveEdit(student.id)}>
-                               <Upload className="h-3 w-3" />
-                           </Button>
-                        </div>
-                      ) : (
-                        <Badge 
-                          variant="outline" 
-                          onClick={() => startEditing(student)} 
-                          className={`cursor-pointer hover:bg-white/10 transition-colors ${student.gpa >= 3.0 ? "border-green-500/50 text-green-400" : "border-pink-500/50 text-pink-400"} font-mono text-xs py-1 px-3`}
-                        >
-                          {student.gpa.toFixed(2)}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 w-48">
-                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(student.gpa / 4) * 100}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className={`h-full shadow-[0_0_10px_currentColor] ${student.gpa >= 3.0 ? 'bg-green-400 text-green-400' : 'bg-pink-500 text-pink-500'}`}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-50 group-hover:opacity-100" 
-                        onClick={() => handleDelete(student.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+             </Dialog>
           </div>
-          {students.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground font-mono text-sm">
-              DATABASE_KOSONG // TIDAK ADA DATA DITEMUKAN
-            </div>
-          )}
+
+          {/* TABLE */}
+          <div className="rounded-lg border border-white/10 bg-[#15171e] overflow-hidden shadow-xl">
+             <table className="w-full text-sm text-left">
+                <thead className="text-xs uppercase bg-white/5 text-gray-400 font-mono border-b border-white/10">
+                   <tr>
+                      <th className="px-6 py-4 font-bold tracking-wider">Mahasiswa</th>
+                      <th className="px-6 py-4 font-bold tracking-wider">NIM</th>
+                      <th className="px-6 py-4 font-bold tracking-wider">Jurusan</th>
+                      <th className="px-6 py-4 font-bold tracking-wider text-center">IPK</th>
+                      <th className="px-6 py-4 font-bold tracking-wider text-center">Visual</th>
+                      <th className="px-6 py-4 font-bold tracking-wider text-right">Aksi</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                   {students.map((student) => (
+                      <tr key={student.id} className="hover:bg-white/[0.02] transition-colors">
+                         <td className="px-6 py-4 font-medium text-white">{student.name}</td>
+                         <td className="px-6 py-4 font-mono text-gray-400">{student.nim}</td>
+                         <td className="px-6 py-4 text-gray-400">{student.major}</td>
+                         <td className="px-6 py-4 text-center">
+                            {editingId === student.id ? (
+                               <div className="flex items-center justify-center gap-2">
+                                  <Input 
+                                     type="number" 
+                                     className="w-16 h-8 text-center bg-black/50 border-cyan-500 text-white text-xs" 
+                                     value={editGpa} 
+                                     onChange={(e) => setEditGpa(parseFloat(e.target.value))}
+                                     step="0.01" max="4.00" autoFocus
+                                  />
+                                  <Button size="icon" className="h-8 w-8 bg-cyan-500 hover:bg-cyan-600 text-black" onClick={() => saveEdit(student.id)}>
+                                     <Upload size={12} />
+                                  </Button>
+                               </div>
+                            ) : (
+                               <Badge 
+                                  variant="outline" 
+                                  onClick={() => startEditing(student)}
+                                  className={`cursor-pointer hover:bg-white/10 ${student.gpa >= 3.5 ? "border-cyan-500/50 text-cyan-400" : (student.gpa >= 3.0 ? "border-blue-500/50 text-blue-400" : "border-purple-500/50 text-purple-400")} font-mono`}
+                               >
+                                  {student.gpa.toFixed(2)}
+                               </Badge>
+                            )}
+                         </td>
+                         <td className="px-6 py-4 w-48">
+                            <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                               <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${(student.gpa / 4) * 100}%` }}
+                                  className={`h-full ${student.gpa >= 3.5 ? 'bg-cyan-400' : (student.gpa >= 3.0 ? 'bg-blue-500' : 'bg-purple-500')}`}
+                               />
+                            </div>
+                         </td>
+                         <td className="px-6 py-4 text-right">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleDelete(student.id)}>
+                               <Trash2 size={14} />
+                            </Button>
+                         </td>
+                      </tr>
+                   ))}
+                </tbody>
+             </table>
+             {students.length === 0 && (
+                <div className="p-12 text-center text-gray-500 font-mono text-sm">
+                   NO DATA FOUND IN CURRENT VIEW
+                </div>
+             )}
+          </div>
+
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import { Student, StudentData } from "./student";
 
 export type SortAlgorithm = 'bubble' | 'selection' | 'insertion' | 'merge' | 'shell';
-export type SearchAlgorithm = 'linear' | 'binary';
+export type SearchAlgorithm = 'linear' | 'binary' | 'sequential';
 
 export class StudentManager {
   private students: Student[] = [];
@@ -18,14 +18,14 @@ export class StudentManager {
   addStudent(data: StudentData): void {
     // Regex Validation for NIM (Example: Must be digits)
     if (!/^\d+$/.test(data.nim)) {
-      throw new Error("Invalid NIM Format: Must be digits only");
+      throw new Error("Format NIM Tidak Valid: Harus berupa angka");
     }
     this.students.push(new Student(data));
   }
 
   updateStudent(id: string, data: Partial<StudentData>): void {
     const student = this.students.find(s => s.id === id);
-    if (!student) throw new Error("Student not found");
+    if (!student) throw new Error("Mahasiswa tidak ditemukan");
     
     if (data.name) student.name = data.name;
     if (data.nim) student.nim = data.nim;
@@ -38,25 +38,25 @@ export class StudentManager {
   }
 
   // Sorting Algorithms
-  sort(algorithm: SortAlgorithm, key: 'gpa' | 'name' | 'nim'): { data: Student[], time: number } {
+  sort(algorithm: SortAlgorithm, key: 'gpa' | 'name' | 'nim', order: 'asc' | 'desc' = 'asc'): { data: Student[], time: number } {
     const start = performance.now();
     let sorted = [...this.students];
 
     switch (algorithm) {
       case 'bubble':
-        sorted = this.bubbleSort(sorted, key);
+        sorted = this.bubbleSort(sorted, key, order);
         break;
       case 'selection':
-        sorted = this.selectionSort(sorted, key);
+        sorted = this.selectionSort(sorted, key, order);
         break;
       case 'insertion':
-        sorted = this.insertionSort(sorted, key);
+        sorted = this.insertionSort(sorted, key, order);
         break;
       case 'merge':
-        sorted = this.mergeSort(sorted, key);
+        sorted = this.mergeSort(sorted, key, order);
         break;
       case 'shell':
-        sorted = this.shellSort(sorted, key);
+        sorted = this.shellSort(sorted, key, order);
         break;
     }
 
@@ -65,11 +65,24 @@ export class StudentManager {
     return { data: sorted, time: end - start };
   }
 
-  private bubbleSort(arr: Student[], key: string): Student[] {
+  private compare(a: Student, b: Student, key: string, order: 'asc' | 'desc'): number {
+    // @ts-ignore
+    const valA = a[key];
+    // @ts-ignore
+    const valB = b[key];
+    
+    let result = 0;
+    if (valA < valB) result = -1;
+    if (valA > valB) result = 1;
+    
+    return order === 'asc' ? result : -result;
+  }
+
+  private bubbleSort(arr: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     let n = arr.length;
     for (let i = 0; i < n - 1; i++) {
       for (let j = 0; j < n - i - 1; j++) {
-        if (this.compare(arr[j], arr[j + 1], key) > 0) {
+        if (this.compare(arr[j], arr[j + 1], key, order) > 0) {
           [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
         }
       }
@@ -77,12 +90,12 @@ export class StudentManager {
     return arr;
   }
 
-  private selectionSort(arr: Student[], key: string): Student[] {
+  private selectionSort(arr: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     let n = arr.length;
     for (let i = 0; i < n - 1; i++) {
       let min_idx = i;
       for (let j = i + 1; j < n; j++) {
-        if (this.compare(arr[j], arr[min_idx], key) < 0) {
+        if (this.compare(arr[j], arr[min_idx], key, order) < 0) {
           min_idx = j;
         }
       }
@@ -91,12 +104,12 @@ export class StudentManager {
     return arr;
   }
 
-  private insertionSort(arr: Student[], key: string): Student[] {
+  private insertionSort(arr: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     let n = arr.length;
     for (let i = 1; i < n; i++) {
       let current = arr[i];
       let j = i - 1;
-      while (j > -1 && this.compare(arr[j], current, key) > 0) {
+      while (j > -1 && this.compare(arr[j], current, key, order) > 0) {
         arr[j + 1] = arr[j];
         j--;
       }
@@ -105,18 +118,18 @@ export class StudentManager {
     return arr;
   }
 
-  private mergeSort(arr: Student[], key: string): Student[] {
+  private mergeSort(arr: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     if (arr.length <= 1) return arr;
     const mid = Math.floor(arr.length / 2);
-    const left = this.mergeSort(arr.slice(0, mid), key);
-    const right = this.mergeSort(arr.slice(mid), key);
-    return this.merge(left, right, key);
+    const left = this.mergeSort(arr.slice(0, mid), key, order);
+    const right = this.mergeSort(arr.slice(mid), key, order);
+    return this.merge(left, right, key, order);
   }
 
-  private merge(left: Student[], right: Student[], key: string): Student[] {
+  private merge(left: Student[], right: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     let resultArray = [], leftIndex = 0, rightIndex = 0;
     while (leftIndex < left.length && rightIndex < right.length) {
-      if (this.compare(left[leftIndex], right[rightIndex], key) < 0) {
+      if (this.compare(left[leftIndex], right[rightIndex], key, order) < 0) {
         resultArray.push(left[leftIndex]);
         leftIndex++;
       } else {
@@ -127,13 +140,13 @@ export class StudentManager {
     return resultArray.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
   }
 
-  private shellSort(arr: Student[], key: string): Student[] {
+  private shellSort(arr: Student[], key: string, order: 'asc' | 'desc'): Student[] {
     let n = arr.length;
     for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
       for (let i = gap; i < n; i++) {
         let temp = arr[i];
         let j;
-        for (j = i; j >= gap && this.compare(arr[j - gap], temp, key) > 0; j -= gap) {
+        for (j = i; j >= gap && this.compare(arr[j - gap], temp, key, order) > 0; j -= gap) {
           arr[j] = arr[j - gap];
         }
         arr[j] = temp;
@@ -147,15 +160,14 @@ export class StudentManager {
     const start = performance.now();
     let results: Student[] = [];
 
-    if (algorithm === 'linear') {
+    if (algorithm === 'linear' || algorithm === 'sequential') {
       results = this.students.filter(s => 
         s.name.toLowerCase().includes(query.toLowerCase()) || 
         s.nim.includes(query)
       );
     } else if (algorithm === 'binary') {
-      // Binary search requires sorted array. For simplicity, we assume sorting by Name here or sort first.
-      // We will sort first to ensure binary search works
-      const sorted = this.mergeSort([...this.students], 'name');
+      // Binary search requires sorted array. Sort by Name ascending first.
+      const sorted = this.mergeSort([...this.students], 'name', 'asc');
       const index = this.binarySearch(sorted, query);
       if (index !== -1) results = [sorted[index]];
     }
@@ -176,16 +188,6 @@ export class StudentManager {
     return -1;
   }
 
-  private compare(a: Student, b: Student, key: string): number {
-    // @ts-ignore
-    const valA = a[key];
-    // @ts-ignore
-    const valB = b[key];
-    if (valA < valB) return -1;
-    if (valA > valB) return 1;
-    return 0;
-  }
-
   // File I/O Simulation
   saveToJSON(): string {
     return JSON.stringify(this.students.map(s => s.toJSON()));
@@ -196,7 +198,7 @@ export class StudentManager {
       const data = JSON.parse(json);
       this.students = data.map((d: StudentData) => new Student(d));
     } catch (e) {
-      throw new Error("Failed to parse file");
+      throw new Error("Gagal membaca file");
     }
   }
 }
