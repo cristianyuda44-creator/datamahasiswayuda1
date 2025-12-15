@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import bgImage from "@assets/generated_images/cyber_bg.png";
-import { STUDENT_DATABASE } from "@/lib/data";
+import { StudentData } from "@/lib/student";
 
 interface LoginProps {
   onLogin: (user: any) => void;
+  students: StudentData[];
 }
 
-export function Login({ onLogin }: LoginProps) {
+export function Login({ onLogin, students }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +27,7 @@ export function Login({ onLogin }: LoginProps) {
     setTimeout(() => {
       setLoading(false);
       
-      const student = STUDENT_DATABASE.find(s => s.nim === username);
+      const student = students.find(s => s.nim === username);
       
       if (student) {
         // Password check: Last 6 digits of NIM

@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Login } from "@/components/Login";
 import { Dashboard } from "@/components/Dashboard";
 import { AnimatePresence, motion } from "framer-motion";
 import { StudentData } from "@/lib/student";
+import { STUDENT_DATABASE } from "@/lib/data";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<StudentData | undefined>(undefined);
+  // Lift state up so Login and Dashboard share the same data source
+  const [allStudents, setAllStudents] = useState<StudentData[]>(STUDENT_DATABASE);
 
   const handleLogin = (userData: StudentData) => {
       setUser(userData);
@@ -18,6 +21,10 @@ export default function Home() {
       setIsLoggedIn(false);
   };
 
+  const handleUpdateStudents = (newStudents: StudentData[]) => {
+      setAllStudents(newStudents);
+  };
+
   return (
     <AnimatePresence mode="wait">
       {!isLoggedIn ? (
@@ -27,7 +34,7 @@ export default function Home() {
           transition={{ duration: 0.6, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          <Login onLogin={handleLogin} />
+          <Login onLogin={handleLogin} students={allStudents} />
         </motion.div>
       ) : (
         <motion.div
@@ -36,7 +43,12 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Dashboard onLogout={handleLogout} currentUser={user} />
+          <Dashboard 
+            onLogout={handleLogout} 
+            currentUser={user} 
+            initialData={allStudents}
+            onDataUpdate={handleUpdateStudents}
+          />
         </motion.div>
       )}
     </AnimatePresence>
