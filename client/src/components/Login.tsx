@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import bgImage from "@assets/generated_images/cybersecurity_themed_background_with_digital_networks_and_neon_bluegreen_data_streams_on_dark_background..png";
+import bgImage from "@assets/generated_images/cyber_bg.png";
 import { STUDENT_DATABASE } from "@/lib/data";
 
 interface LoginProps {
