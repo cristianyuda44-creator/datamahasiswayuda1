@@ -35,22 +35,22 @@ export function Login({ onLogin }: LoginProps) {
         if (password === expectedPassword) {
            onLogin(student);
            toast({
-             title: "ACCESS GRANTED",
-             description: `Welcome, Agent ${student.name.split(' ')[0]}`,
+             title: "AKSES DITERIMA",
+             description: `Selamat Datang, Agen ${student.name.split(' ')[0]}`,
              className: "bg-green-500/10 border-green-500/50 text-green-500"
            });
         } else {
            toast({
              variant: "destructive",
-             title: "ACCESS DENIED",
-             description: "Invalid credentials. Security protocols active.",
+             title: "AKSES DITOLAK",
+             description: "Kredensial tidak valid. Protokol keamanan aktif.",
            });
         }
       } else {
         toast({
           variant: "destructive",
-          title: "UNKNOWN ENTITY",
-          description: "User identity not found in database.",
+          title: "ENTITAS TIDAK DIKENAL",
+          description: "Identitas pengguna tidak ditemukan dalam database.",
         });
       }
     }, 1500);
@@ -93,14 +93,14 @@ export function Login({ onLogin }: LoginProps) {
                 </h1>
                 <div className="flex items-center gap-2 mt-2 text-xs font-mono text-primary/70">
                     <Terminal size={12} />
-                    <span>SYSTEM_READY</span>
+                    <span>SISTEM SIAP</span>
                 </div>
               </motion.div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6 relative z-10">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Identify (NIM)</Label>
+                <Label htmlFor="username" className="text-xs uppercase tracking-widest text-muted-foreground font-mono">IDENTITAS (NIM)</Label>
                 <div className="relative group">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
@@ -114,7 +114,7 @@ export function Login({ onLogin }: LoginProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Access Key (Last 6 Digits)</Label>
+                <Label htmlFor="password" className="text-xs uppercase tracking-widest text-muted-foreground font-mono">KUNCI AKSES (6 DIGIT TERAKHIR)</Label>
                 <div className="relative group">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                   <Input
@@ -135,11 +135,11 @@ export function Login({ onLogin }: LoginProps) {
               >
                 {loading ? (
                   <span className="flex items-center font-mono">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> AUTHENTICATING...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> MENGOTENTIKASI...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    Initiate Session <ArrowRight className="ml-2 h-4 w-4" />
+                    MULAI SESI <ArrowRight className="ml-2 h-4 w-4" />
                   </span>
                 )}
               </Button>
@@ -148,7 +148,7 @@ export function Login({ onLogin }: LoginProps) {
             <div className="mt-6 text-center">
                 <div className="inline-flex items-center px-3 py-1 rounded-full border border-white/5 bg-white/5 text-[10px] text-muted-foreground font-mono">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 animate-pulse" />
-                    SECURE CONNECTION ESTABLISHED
+                    KONEKSI AMAN TERSAMBUNG
                 </div>
             </div>
         </div>

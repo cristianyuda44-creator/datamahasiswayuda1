@@ -69,8 +69,8 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
     setSearchTime(time);
     setCurrentAlgo(algo);
     toast({
-      title: `Search Complete (${algo})`,
-      description: `Found ${results.length} results in ${time.toFixed(4)}ms`,
+      title: `Pencarian Selesai (${algo})`,
+      description: `Ditemukan ${results.length} hasil dalam ${time.toFixed(4)}ms`,
     });
   };
 
@@ -80,14 +80,14 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
     setSortTime(time);
     setCurrentAlgo(algo);
     toast({
-      title: `Sort Complete (${algo})`,
-      description: `Sorted by ${key} in ${time.toFixed(4)}ms`,
+      title: `Pengurutan Selesai (${algo})`,
+      description: `Diurutkan berdasarkan ${key} dalam ${time.toFixed(4)}ms`,
     });
   };
 
   const handleAdd = () => {
     try {
-      if (!formData.name || !formData.nim || !formData.major) throw new Error("All fields required");
+      if (!formData.name || !formData.nim || !formData.major) throw new Error("Semua kolom harus diisi");
       
       manager.addStudent({
         id: Math.random().toString(36).substr(2, 9),
@@ -99,16 +99,16 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
       refreshData();
       setIsAddOpen(false);
       setFormData({ name: "", nim: "", major: "", gpa: 0 });
-      toast({ title: "Success", description: "Student added successfully" });
+      toast({ title: "Berhasil", description: "Mahasiswa berhasil ditambahkan" });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: e.message });
+      toast({ variant: "destructive", title: "Gagal", description: e.message });
     }
   };
 
   const handleDelete = (id: string) => {
     manager.deleteStudent(id);
     refreshData();
-    toast({ title: "Deleted", description: "Student removed from database" });
+    toast({ title: "Dihapus", description: "Data mahasiswa dihapus dari database" });
   };
   
   const startEditing = (student: Student) => {
@@ -120,7 +120,7 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
       manager.updateStudent(id, { gpa: editGpa });
       setEditingId(null);
       refreshData();
-      toast({ title: "Updated", description: "GPA updated successfully" });
+      toast({ title: "Diperbarui", description: "IPK berhasil diperbarui" });
   };
 
   const handleExport = () => {
@@ -129,9 +129,9 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "students.json";
+    a.download = "data_mahasiswa.json";
     a.click();
-    toast({ title: "Exported", description: "Data downloaded successfully" });
+    toast({ title: "Ekspor Berhasil", description: "Data berhasil diunduh" });
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,9 +142,9 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
       try {
         manager.loadFromJSON(e.target?.result as string);
         refreshData();
-        toast({ title: "Imported", description: "Data loaded successfully" });
+        toast({ title: "Impor Berhasil", description: "Data berhasil dimuat" });
       } catch (err) {
-        toast({ variant: "destructive", title: "Error", description: "Invalid file format" });
+        toast({ variant: "destructive", title: "Gagal", description: "Format file tidak valid" });
       }
     };
     reader.readAsText(file);
@@ -177,7 +177,7 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
             </h1>
             <div className="flex items-center gap-2 text-[10px] font-mono text-primary/70">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                SYSTEM_ONLINE
+                SISTEM ONLINE
             </div>
           </div>
         </div>
@@ -192,20 +192,20 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
           />
           <div className="hidden md:flex gap-2">
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="border-primary/30 hover:bg-primary/10 text-primary font-mono text-xs">
-                <Upload className="mr-2 h-3 w-3" /> IMPORT_DATA
+                <Upload className="mr-2 h-3 w-3" /> IMPOR DATA
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport} className="border-primary/30 hover:bg-primary/10 text-primary font-mono text-xs">
-                <Download className="mr-2 h-3 w-3" /> EXPORT_DATA
+                <Download className="mr-2 h-3 w-3" /> EKSPOR DATA
             </Button>
           </div>
           
           <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <div className="text-right hidden sm:block">
-                  <p className="text-xs text-muted-foreground font-mono">CURRENT_USER</p>
+                  <p className="text-xs text-muted-foreground font-mono">PENGGUNA</p>
                   <p className="text-sm font-bold text-white">{currentUser?.name || "ADMIN"}</p>
               </div>
               <Button variant="ghost" className="hover:bg-destructive/10 hover:text-destructive border border-transparent hover:border-destructive/30" onClick={onLogout}>
-                LOGOUT
+                KELUAR
               </Button>
           </div>
         </div>
@@ -218,7 +218,7 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="border border-primary/20 shadow-[0_0_20px_rgba(0,255,255,0.05)] bg-black/40 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground font-mono uppercase">Average GPA</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground font-mono uppercase">Rata-rata IPK</CardTitle>
                 <Activity className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -235,8 +235,8 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
             <Card className="h-full border border-primary/20 shadow-[0_0_20px_rgba(0,255,255,0.05)] bg-black/40 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-primary font-mono uppercase text-sm">GPA Distribution_Visualizer</CardTitle>
-                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-[10px]">LIVE_FEED</Badge>
+                <CardTitle className="text-primary font-mono uppercase text-sm">Visualisasi Distribusi IPK</CardTitle>
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 font-mono text-[10px]">LIVE FEED</Badge>
               </CardHeader>
               <CardContent className="h-[120px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -245,9 +245,15 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
                       cursor={{fill: 'rgba(255,255,255,0.05)'}}
                       contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333', color: '#fff', fontFamily: 'monospace' }}
                     />
-                    <Bar dataKey="gpa" radius={[2, 2, 0, 0]}>
+                    <Bar dataKey="gpa" radius={[2, 2, 0, 0]} isAnimationActive={true}>
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.gpa >= 3.0 ? 'hsl(var(--primary))' : 'hsl(var(--secondary))'} />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.gpa >= 3.0 ? '#00ffd5' : '#ff00ff'} 
+                          stroke="#ffffff"
+                          strokeWidth={1}
+                          strokeOpacity={0.2}
+                        />
                       ))}
                     </Bar>
                   </BarChart>
@@ -264,7 +270,7 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
               <div className="relative flex-1 md:w-64 group">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 <Input 
-                  placeholder="SEARCH_QUERY..." 
+                  placeholder="CARI DATA..." 
                   className="pl-9 bg-black/20 border-white/10 focus:border-primary/50 font-mono text-sm text-white"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -282,7 +288,7 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
               <Select onValueChange={(v) => handleSort(v, 'gpa')}>
                 <SelectTrigger className="w-[140px] bg-black/20 border-white/10 font-mono text-xs">
                   <SortAsc className="mr-2 h-3 w-3" />
-                  <SelectValue placeholder="SORT_ALGO" />
+                  <SelectValue placeholder="URUTKAN" />
                 </SelectTrigger>
                 <SelectContent className="bg-black/90 border-white/20 text-white">
                   <SelectItem value="bubble">BUBBLE SORT</SelectItem>
@@ -296,32 +302,32 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
               <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-primary text-black hover:bg-primary/90 font-bold font-mono text-xs tracking-wider">
-                    <Plus className="mr-2 h-4 w-4" /> ADD_ENTRY
+                    <Plus className="mr-2 h-4 w-4" /> TAMBAH DATA
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px] bg-black/90 border-primary/30 text-white backdrop-blur-xl">
                   <DialogHeader>
-                    <DialogTitle className="font-mono text-primary">NEW_STUDENT_ENTRY</DialogTitle>
+                    <DialogTitle className="font-mono text-primary">ENTRI MAHASISWA BARU</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right font-mono text-xs text-muted-foreground">NAME</Label>
+                      <Label htmlFor="name" className="text-right font-mono text-xs text-muted-foreground">NAMA</Label>
                       <Input id="name" className="col-span-3 bg-white/5 border-white/10" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="nim" className="text-right font-mono text-xs text-muted-foreground">NIM</Label>
-                      <Input id="nim" className="col-span-3 bg-white/5 border-white/10" value={formData.nim} onChange={e => setFormData({...formData, nim: e.target.value})} placeholder="Digits only" />
+                      <Input id="nim" className="col-span-3 bg-white/5 border-white/10" value={formData.nim} onChange={e => setFormData({...formData, nim: e.target.value})} placeholder="Hanya angka" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="major" className="text-right font-mono text-xs text-muted-foreground">MAJOR</Label>
+                      <Label htmlFor="major" className="text-right font-mono text-xs text-muted-foreground">JURUSAN</Label>
                       <Input id="major" className="col-span-3 bg-white/5 border-white/10" value={formData.major} onChange={e => setFormData({...formData, major: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="gpa" className="text-right font-mono text-xs text-muted-foreground">GPA</Label>
+                      <Label htmlFor="gpa" className="text-right font-mono text-xs text-muted-foreground">IPK</Label>
                       <Input id="gpa" type="number" step="0.01" max="4.0" className="col-span-3 bg-white/5 border-white/10" value={formData.gpa} onChange={e => setFormData({...formData, gpa: parseFloat(e.target.value)})} />
                     </div>
                   </div>
-                  <Button onClick={handleAdd} className="w-full bg-primary text-black hover:bg-primary/90">CONFIRM_ENTRY</Button>
+                  <Button onClick={handleAdd} className="w-full bg-primary text-black hover:bg-primary/90">KONFIRMASI</Button>
                 </DialogContent>
               </Dialog>
             </div>
@@ -329,88 +335,101 @@ export function Dashboard({ onLogout, currentUser }: DashboardProps) {
           {(searchTime !== null || sortTime !== null) && (
             <div className="px-4 pb-2 border-t border-white/5 flex items-center justify-between bg-black/20">
               <div className="flex gap-4 text-[10px] font-mono text-muted-foreground py-1">
-                {searchTime !== null && <span>SEARCH_TIME: <span className="text-primary">{searchTime.toFixed(4)}ms</span></span>}
-                {sortTime !== null && <span>SORT_TIME: <span className="text-primary">{sortTime.toFixed(4)}ms</span></span>}
+                {searchTime !== null && <span>WAKTU PENCARIAN: <span className="text-primary">{searchTime.toFixed(4)}ms</span></span>}
+                {sortTime !== null && <span>WAKTU SORTING: <span className="text-primary">{sortTime.toFixed(4)}ms</span></span>}
               </div>
               {currentAlgo && (
                 <Badge variant="outline" className="font-mono text-[10px] border-primary/20 text-primary/70 bg-primary/5 h-5">
-                  COMPLEXITY: {COMPLEXITIES[currentAlgo]}
+                  KOMPLEKSITAS: {COMPLEXITIES[currentAlgo]}
                 </Badge>
               )}
             </div>
           )}
         </Card>
 
-        {/* Data Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {students.map((student, idx) => (
-            <motion.div
-              key={student.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05 }}
-            >
-              <Card className="overflow-hidden bg-card/40 backdrop-blur-md border border-white/5 hover:border-primary/50 transition-all duration-300 group hover:shadow-[0_0_20px_rgba(0,255,255,0.1)]">
-                <CardHeader className="relative pb-2 space-y-0">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <CardTitle className="text-base font-bold text-white group-hover:text-primary transition-colors truncate w-48 font-heading tracking-wide">
-                          {student.name}
-                      </CardTitle>
-                      <p className="text-xs text-muted-foreground font-mono bg-white/5 inline-block px-1 rounded">{student.nim}</p>
-                    </div>
-                    {editingId === student.id ? (
-                        <div className="flex items-center gap-1">
-                             <Input 
-                                type="number" 
-                                className="w-16 h-8 text-xs bg-black/50 border-primary" 
-                                value={editGpa} 
-                                onChange={(e) => setEditGpa(parseFloat(e.target.value))}
-                                step="0.01"
-                                max="4.00"
-                             />
-                             <Button size="icon" className="h-8 w-8 bg-green-500 hover:bg-green-600" onClick={() => saveEdit(student.id)}>
-                                 <Upload className="h-3 w-3" />
-                             </Button>
-                        </div>
-                    ) : (
-                        <Badge variant="outline" onClick={() => startEditing(student)} className={`cursor-pointer hover:bg-white/10 ${student.gpa >= 3.0 ? "border-green-500/50 text-green-400" : "border-yellow-500/50 text-yellow-400"} font-mono`}>
-                          GPA: {student.gpa.toFixed(2)}
-                        </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 pt-2">
-                    <div className="flex items-center text-xs text-muted-foreground font-mono">
-                      <GraduationCap className="mr-2 h-3 w-3 text-primary/70" />
+        {/* Data Grid Table */}
+        <div className="rounded-md border border-white/10 overflow-hidden bg-black/40 backdrop-blur-sm shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs uppercase bg-primary/10 text-primary font-mono border-b border-white/10">
+                <tr>
+                  <th className="px-6 py-4 font-bold tracking-wider">Mahasiswa</th>
+                  <th className="px-6 py-4 font-bold tracking-wider">NIM</th>
+                  <th className="px-6 py-4 font-bold tracking-wider">Jurusan</th>
+                  <th className="px-6 py-4 font-bold tracking-wider text-center">IPK</th>
+                  <th className="px-6 py-4 font-bold tracking-wider text-center">Visual</th>
+                  <th className="px-6 py-4 font-bold tracking-wider text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {students.map((student) => (
+                  <tr key={student.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="px-6 py-4 font-medium text-white font-heading tracking-wide">
+                      {student.name}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-muted-foreground">
+                      {student.nim}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">
                       {student.major}
-                    </div>
-                    
-                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-primary to-secondary shadow-[0_0_10px_var(--color-primary)]" 
-                        style={{ width: `${(student.gpa / 4) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive text-muted-foreground" onClick={() => handleDelete(student.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-        
-        {students.length === 0 && (
-          <div className="text-center py-20 text-muted-foreground border border-dashed border-white/10 rounded-xl bg-black/20">
-            <p className="font-mono text-sm">DATABASE_EMPTY // NO ENTRIES FOUND</p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {editingId === student.id ? (
+                        <div className="flex items-center justify-center gap-2">
+                           <Input 
+                              type="number" 
+                              className="w-20 h-8 text-center bg-black/50 border-primary text-white" 
+                              value={editGpa} 
+                              onChange={(e) => setEditGpa(parseFloat(e.target.value))}
+                              step="0.01"
+                              max="4.00"
+                              autoFocus
+                           />
+                           <Button size="icon" className="h-8 w-8 bg-green-500 hover:bg-green-600 text-black" onClick={() => saveEdit(student.id)}>
+                               <Upload className="h-3 w-3" />
+                           </Button>
+                        </div>
+                      ) : (
+                        <Badge 
+                          variant="outline" 
+                          onClick={() => startEditing(student)} 
+                          className={`cursor-pointer hover:bg-white/10 transition-colors ${student.gpa >= 3.0 ? "border-green-500/50 text-green-400" : "border-pink-500/50 text-pink-400"} font-mono text-xs py-1 px-3`}
+                        >
+                          {student.gpa.toFixed(2)}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 w-48">
+                      <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(student.gpa / 4) * 100}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className={`h-full shadow-[0_0_10px_currentColor] ${student.gpa >= 3.0 ? 'bg-green-400 text-green-400' : 'bg-pink-500 text-pink-500'}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-50 group-hover:opacity-100" 
+                        onClick={() => handleDelete(student.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+          {students.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground font-mono text-sm">
+              DATABASE_KOSONG // TIDAK ADA DATA DITEMUKAN
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
